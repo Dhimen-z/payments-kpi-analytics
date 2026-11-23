@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: write
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -r requirements.txt
+      - run: ruff check .
+      - run: python -m pytest -q
+      - name: Données + rapport + export Power BI
+        run: |
+          python -m analytics.dataset
+          python -m analytics.report
+          python -m analytics.export_powerbi
+      - name: Publier le rapport et les graphiques générés
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add RAPPORT.md docs/
+          git diff --cached --quiet || (git commit -m "docs: rapport et graphiques régénérés" && git push)
