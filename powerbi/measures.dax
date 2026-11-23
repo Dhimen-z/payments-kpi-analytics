@@ -1,0 +1,30 @@
+// Mesures DAX pour le modèle Power BI construit sur powerbi/data/*.csv
+// Relations : fact_transactions[customer_id] -> dim_customer, [merchant_id] -> dim_merchant, [date] -> dim_date
+
+Volume approuvé =
+CALCULATE ( SUM ( fact_transactions[amount] ), fact_transactions[is_approved] = TRUE () )
+
+Nb transactions = COUNTROWS ( fact_transactions )
+
+Clients actifs = DISTINCTCOUNT ( fact_transactions[customer_id] )
+
+Panier moyen = DIVIDE ( SUM ( fact_transactions[amount] ), [Nb transactions] )
+
+Taux d'acceptation =
+DIVIDE ( CALCULATE ( [Nb transactions], fact_transactions[is_approved] = TRUE () ), [Nb transactions] )
+
+Taux de fraude =
+DIVIDE ( CALCULATE ( [Nb transactions], fact_transactions[is_fraud] = TRUE () ), [Nb transactions] )
+
+Montant fraudé =
+CALCULATE ( SUM ( fact_transactions[amount] ), fact_transactions[is_fraud] = TRUE () )
+
+Volume M-1 =
+CALCULATE ( [Volume approuvé], DATEADD ( dim_date[date], -1, MONTH ) )
+
+Évolution M-1 % = DIVIDE ( [Volume approuvé] - [Volume M-1], [Volume M-1] )
+
+Volume cumulé (YTD) = TOTALYTD ( [Volume approuvé], dim_date[date] )
+
+Part du volume =
+DIVIDE ( [Volume approuvé], CALCULATE ( [Volume approuvé], ALL ( dim_merchant[category] ) ) )
